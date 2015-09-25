@@ -223,6 +223,20 @@ json_t *list_timestamps(rcComm_t *conn, rodsPath_t *rods_path,
                         baton_error_t *error);
 
 /**
+ * Return a JSON representation of the created and modified timestamps
+ * of metadata for a resolved iRODS path (data object or collection).
+ *
+ * @param[in]  conn      An open iRODS connection.
+ * @param[in]  rodspath  An iRODS path.
+ * @param[out] error     An error report struct.
+ *
+ * @return A new struct representing the metadata timestamps, which
+ * must be freed by the caller.
+ */
+json_t *list_metadata_timestamps(rcComm_t *conn, rodsPath_t *rods_path,
+        baton_error_t *error);
+
+/**
  * Return a JSON representation of the access control list of a
  * resolved iRODS path (data object or collection).
  *

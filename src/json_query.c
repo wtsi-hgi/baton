@@ -676,7 +676,7 @@ json_t *add_tps_json_object(rcComm_t *conn, json_t *object,
         goto error;
     }
 
-    raw_timestamps = list_timestamps(conn, &rods_path, error);
+    raw_timestamps = list_metadata_timestamps(conn, &rods_path, error);
     if (error->code != 0) goto error;
 
     timestamps = json_array();
@@ -705,23 +705,47 @@ json_t *add_tps_json_object(rcComm_t *conn, json_t *object,
                 goto error;
             }
 
-            const char *created = get_created_timestamp(item, error);
-            if (error->code != 0) goto error;
-            const char *modified = get_modified_timestamp(item, error);
-            if (error->code != 0) goto error;
+//          const char *created = get_created_timestamp(item, error);
+//			if (error->code != 0) goto error;
+//			const char *modified = get_modified_timestamp(item, error);
+//			if (error->code != 0) goto error;
+			const char *meta_created = get_meta_created_timestamp(item, error);
+			if (error->code != 0) goto error;
+			const char *meta_modified = get_meta_modified_timestamp(item, error);
+			if (error->code != 0) goto error;
 
-            json_t *iso_created =
-                make_timestamp(JSON_CREATED_KEY, created, ISO8601_FORMAT,
-                               &repl_num, error);
-            if (error->code != 0) goto error;
+//			json_t *iso_created =
+//				make_timestamp(JSON_CREATED_KEY, created, ISO8601_FORMAT,
+//							   &repl_num, error);
+//			if (error->code != 0) goto error;
+//
+//			json_t *iso_modified =
+//				make_timestamp(JSON_MODIFIED_KEY, modified, ISO8601_FORMAT,
+//							   &repl_num, error);
+//			if (error->code != 0) goto error;
 
-            json_t *iso_modified =
-                make_timestamp(JSON_MODIFIED_KEY, modified, ISO8601_FORMAT,
-                               &repl_num, error);
-            if (error->code != 0) goto error;
+			json_t *iso_meta_created =
+				make_timestamp(JSON_META_CREATED_KEY, meta_created, ISO8601_FORMAT,
+							   &repl_num, error);
+			if (error->code != 0) goto error;
 
-            json_array_append_new(timestamps, iso_created);
-            json_array_append_new(timestamps, iso_modified);
+			json_t *iso_meta_modified =
+				make_timestamp(JSON_META_MODIFIED_KEY, meta_modified, ISO8601_FORMAT,
+							   &repl_num, error);
+			if (error->code != 0) goto error;
+
+//			const char *meta_attribute_key = get_string_value(item, "timestamps", JSON_ATTRIBUTE_KEY,
+//			                            JSON_MODIFIED_SHORT_KEY, error);
+			json_t *meta_attribute_key = json_string(get_avu_attribute(item, error));
+			if (error->code != 0) goto error;
+
+			json_object_set_new(iso_meta_created, JSON_ATTRIBUTE_KEY, meta_attribute_key);
+			json_object_set_new(iso_meta_modified, JSON_ATTRIBUTE_KEY, meta_attribute_key);
+
+//			json_array_append_new(timestamps, iso_created);
+//			json_array_append_new(timestamps, iso_modified);
+			json_array_append_new(timestamps, iso_meta_created);
+			json_array_append_new(timestamps, iso_meta_modified);
 
             logmsg(DEBUG, "Adding timestamps from replicate %d of '%s'",
                    repl_num, path);

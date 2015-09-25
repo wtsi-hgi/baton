@@ -794,21 +794,11 @@ error:
     return NULL;
 }
 
-json_t *list_timestamps(rcComm_t *conn, rodsPath_t *rods_path,
-                        baton_error_t *error) {
+static json_t *list_timestamps_from_query_formats(rcComm_t *conn, rodsPath_t *rods_path,
+                        baton_error_t *error, query_format_in_t col_format,
+						query_format_in_t obj_format) {
     genQueryInp_t *query_in = NULL;
     json_t *results         = NULL;
-
-    query_format_in_t obj_format =
-        { .num_columns = 3,
-          .columns     = { COL_D_CREATE_TIME, COL_D_MODIFY_TIME,
-                           COL_DATA_REPL_NUM },
-          .labels      = { JSON_CREATED_KEY, JSON_MODIFIED_KEY,
-                           JSON_REPLICATE_KEY } };
-    query_format_in_t col_format =
-        { .num_columns = 2,
-          .columns     = { COL_COLL_CREATE_TIME, COL_COLL_MODIFY_TIME },
-          .labels      = { JSON_CREATED_KEY, JSON_MODIFIED_KEY } };
 
     init_baton_error(error);
 
@@ -862,6 +852,73 @@ error:
     if (results)    json_decref(results);
 
     return NULL;
+}
+
+json_t *list_timestamps(rcComm_t *conn, rodsPath_t *rods_path,
+                        baton_error_t *error) {
+	query_format_in_t obj_format = {
+			.num_columns = 3,
+			.columns = {
+					COL_D_CREATE_TIME,
+					COL_D_MODIFY_TIME,
+					COL_DATA_REPL_NUM
+			},
+			.labels = {
+					JSON_CREATED_KEY,
+					JSON_MODIFIED_KEY,
+					JSON_REPLICATE_KEY
+			}
+	};
+	query_format_in_t col_format = {
+			.num_columns = 2,
+			.columns = {
+					COL_COLL_CREATE_TIME,
+					COL_COLL_MODIFY_TIME
+			},
+			.labels = {
+					JSON_CREATED_KEY,
+					JSON_MODIFIED_KEY
+			}
+	};
+
+	return list_timestamps_from_query_formats(
+			conn, rods_path, error, col_format, obj_format);
+}
+
+json_t *list_metadata_timestamps(rcComm_t *conn, rodsPath_t *rods_path,
+                        baton_error_t *error) {
+	query_format_in_t col_format = {
+			.num_columns = 3,
+			.columns = {
+					COL_META_COLL_ATTR_NAME,
+					COL_META_COLL_CREATE_TIME,
+					COL_META_COLL_MODIFY_TIME
+			},
+			.labels = {
+					JSON_ATTRIBUTE_KEY,
+					JSON_META_CREATED_KEY,
+					JSON_META_MODIFIED_KEY
+			}
+	};
+
+	query_format_in_t obj_format = {
+			.num_columns = 4,
+			.columns = {
+					COL_DATA_REPL_NUM,
+					COL_META_DATA_CREATE_TIME,
+					COL_META_DATA_MODIFY_TIME,
+					COL_META_DATA_ATTR_NAME
+			},
+			.labels = {
+					JSON_REPLICATE_KEY,
+					JSON_META_CREATED_KEY,
+					JSON_META_MODIFIED_KEY,
+					JSON_ATTRIBUTE_KEY
+			}
+	};
+
+	return list_timestamps_from_query_formats(
+			conn, rods_path, error, col_format, obj_format);
 }
 
 json_t *list_checksum(rcComm_t *conn, rodsPath_t *rods_path,
