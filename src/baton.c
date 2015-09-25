@@ -904,6 +904,7 @@ json_t *list_metadata_timestamps(rcComm_t *conn, rodsPath_t *rods_path,
 	query_format_in_t obj_format = {
 			.num_columns = 4,
 			.columns = {
+					// XXX: COL_DATA_REPL_NUM should not be required but without, bad things seem to happen!?
 					COL_DATA_REPL_NUM,
 					COL_META_DATA_CREATE_TIME,
 					COL_META_DATA_MODIFY_TIME,

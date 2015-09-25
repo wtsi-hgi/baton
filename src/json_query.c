@@ -725,19 +725,25 @@ json_t *add_tps_json_object(rcComm_t *conn, json_t *object,
 //			if (error->code != 0) goto error;
 
 			json_t *iso_meta_created =
-				make_timestamp(JSON_META_CREATED_KEY, meta_created, ISO8601_FORMAT,
-							   &repl_num, error);
+				make_timestamp(JSON_META_CREATED_KEY, meta_created, ISO8601_FORMAT, 0, error);
 			if (error->code != 0) goto error;
 
 			json_t *iso_meta_modified =
-				make_timestamp(JSON_META_MODIFIED_KEY, meta_modified, ISO8601_FORMAT,
-							   &repl_num, error);
+				make_timestamp(JSON_META_MODIFIED_KEY, meta_modified, ISO8601_FORMAT, 0, error);
 			if (error->code != 0) goto error;
+//
+//			char *formatted = format_timestamp(value, format);
+//
+//
+//			json_object_set_new(object, JSON_META_CREATED_KEY, iso_meta_created);
+
+
 
 //			const char *meta_attribute_key = get_string_value(item, "timestamps", JSON_ATTRIBUTE_KEY,
 //			                            JSON_MODIFIED_SHORT_KEY, error);
 			json_t *meta_attribute_key = json_string(get_avu_attribute(item, error));
 			if (error->code != 0) goto error;
+
 
 			json_object_set_new(iso_meta_created, JSON_ATTRIBUTE_KEY, meta_attribute_key);
 			json_object_set_new(iso_meta_modified, JSON_ATTRIBUTE_KEY, meta_attribute_key);
