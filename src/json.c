@@ -805,7 +805,9 @@ static json_t *get_opt_array(json_t *object, const char *name,
     }
 
     if (!array) {
-      array = json_array();
+        array = json_array();
+    } else {
+        json_incref(array);
     }
 
     return array;

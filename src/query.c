@@ -487,7 +487,7 @@ specificQueryInp_t *prepare_specific_query(specificQueryInp_t *squery_in,
 
     json_array_foreach(args, index, value) {
       if (json_is_string(value)) {
-          squery_in->args[index] = (char *)json_string_value(value);
+          squery_in->args[index] = strdup(json_string_value(value));
       } else {
           goto error;
       }
