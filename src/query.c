@@ -17,6 +17,7 @@
  *
  * @file query.c
  * @author Keith James <kdj@sanger.ac.uk>
+ * @author Joshua C. Randall <jcrandall@alum.mit.edu>
  */
 
 #include <assert.h>
@@ -24,6 +25,8 @@
 #include <libgen.h>
 #include <math.h>
 #include <string.h>
+
+#include <jansson.h>
 
 #include "config.h"
 #include "log.h"
@@ -470,4 +473,63 @@ genQueryInp_t *prepare_user_search(genQueryInp_t *query_in,
 
     size_t num_conds = 1;
     return add_query_conds(query_in, num_conds,  (query_cond_t []) { un });
+}
+
+specificQueryInp_t *prepare_specific_query(specificQueryInp_t *squery_in,
+                                           const char *sql, const json_t *args) {
+
+    size_t index;
+    json_t *value;
+
+    squery_in->maxRows = SEARCH_MAX_ROWS;
+    squery_in->continueInx = 0;
+    squery_in->sql = (char *)sql;
+
+    json_array_foreach(args, index, value) {
+      if (json_is_string(value)) {
+          squery_in->args[index] = (char *)json_string_value(value);
+      } else {
+          goto error;
+      }
+    }
+
+    return squery_in;
+
+error:
+    logmsg(ERROR, "Failed to parse JSON specific query args: %s",
+           args);
+    return squery_in;
+}
+
+query_format_in_t *prepare_specific_labels(const char *sql) {
+    unsigned int i;
+    query_format_in_t *format;
+
+    format = calloc(1, sizeof(query_format_in_t));
+    if (!format) goto error;
+
+    format->num_columns = 11;
+    char *fmt[] = {"c1","c2","c3","c4","c5","c6","c7","c8","c9","c10","c11"};
+
+    for (i=0; i<(format->num_columns-1); i++) {
+        format->labels[i] = strdup(fmt[i]);
+    }
+    return format;
+
+error:
+    logmsg(ERROR, "Failed to prepare labels for specific query: %s", sql);
+    return format;
+}
+
+void free_squery_input(specificQueryInp_t *squery_in) {
+    unsigned int i;
+    assert(squery_in);
+
+    for (i=0; i<10; i++) {
+        if(squery_in->args[i] != NULL) {
+            free(squery_in->args[i]);
+        }
+    }
+    free(squery_in->sql);
+    free(squery_in);
 }
