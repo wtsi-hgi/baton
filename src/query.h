@@ -91,7 +91,7 @@ typedef genQueryInp_t *(*prepare_tps_search_cb) (genQueryInp_t *query_in,
 
 typedef specificQueryInp_t *(*prepare_specific_query_cb) (specificQueryInp_t *squery_in,
                                                           const char *sql,
-                                                          const json_t *args);
+                                                          json_t *args);
 
 typedef query_format_in_t *(*prepare_specific_labels_cb) (const char *sql);
 
@@ -234,11 +234,13 @@ genQueryInp_t *prepare_user_search(genQueryInp_t *query_in,
                                    const char *user_name);
 
 specificQueryInp_t *prepare_specific_query(specificQueryInp_t *squery_in,
-                                           const char *sql, const json_t *args);
+                                           const char *sql, json_t *args);
 
 query_format_in_t *prepare_specific_labels(const char *sql);
 
 void free_squery_input(specificQueryInp_t *squery_in);
+
+void free_specific_labels(query_format_in_t *format);
 
 genQueryInp_t *limit_to_newest_repl(genQueryInp_t *query_in);
 

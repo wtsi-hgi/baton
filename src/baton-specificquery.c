@@ -118,6 +118,7 @@ int main(int argc, char *argv[]) {
 }
 
 int do_search_specific(FILE *input) {
+    int item_count  = 0;
     int error_count = 0;
 
     rodsEnv env;
@@ -137,28 +138,44 @@ int do_search_specific(FILE *input) {
             continue;
         }
 
-        baton_error_t error;
-        json_t *results = search_specific(conn, target, &error);
-        if (error.code != 0) {
+        item_count++;
+        if (!json_is_object(target)) {
+            logmsg(ERROR, "Item %d in stream was not a JSON object; skipping",
+                   item_count);
             error_count++;
-            add_error_value(target, &error);
+            json_decref(target);
+            continue;
+        }
+
+        json_t *results = NULL;
+
+        baton_error_t search_error;
+        results = search_specific(conn, target, &search_error);
+        if (search_error.code != 0) {
+            error_count++;
+            add_error_value(target, &search_error);
             print_json(target);
         }
         else {
             print_json(results);
-            json_decref(results);
         }
 
         if (unbuffered_flag) fflush(stdout);
-        json_decref(target);
+
+        if (results) json_decref(results);
+        if (target) json_decref(target);
     } // while
 
     rcDisconnect(conn);
+
+    logmsg(DEBUG, "Processed %d items with %d errors", item_count, error_count);
 
     return 0;
 
 error:
     if (conn) rcDisconnect(conn);
+
+    logmsg(ERROR, "Processed %d items with %d errors", item_count, error_count);
 
     return 1;
 }

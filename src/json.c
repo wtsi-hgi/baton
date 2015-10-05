@@ -47,9 +47,9 @@ static const char *get_opt_string_value(json_t *object, const char *name,
                                         const char *short_key,
                                         baton_error_t *error);
 
-static const json_t *get_opt_array(json_t *object, const char *name,
-                                   const char *key, const char *short_key,
-                                   baton_error_t *error);
+static json_t *get_opt_array(json_t *object, const char *name,
+                             const char *key, const char *short_key,
+                             baton_error_t *error);
 
 static int has_json_str_value(json_t *object, const char *key,
                               const char *short_key);
@@ -272,7 +272,7 @@ const char *get_specific_sql(json_t *sql, baton_error_t *error) {
                                 JSON_SQL_SHORT_KEY, error);
 }
 
-const json_t *get_specific_args(json_t *sql, baton_error_t *error) {
+json_t *get_specific_args(json_t *sql, baton_error_t *error) {
     return get_opt_array(sql, "SQL", JSON_ARGS_KEY,
                          JSON_ARGS_SHORT_KEY, error);
 }
@@ -773,7 +773,6 @@ static const char *get_opt_string_value(json_t *object, const char *name,
     }
 
     if (value) {
-      //foo
         str = json_string_value(value);
     }
 
@@ -783,9 +782,9 @@ error:
     return NULL;
 }
 
-static const json_t *get_opt_array(json_t *object, const char *name,
-                                   const char *key, const char *short_key,
-                                   baton_error_t *error) {
+static json_t *get_opt_array(json_t *object, const char *name,
+                             const char *key, const char *short_key,
+                             baton_error_t *error) {
     json_t *array;
 
     if (!json_is_object(object)) {

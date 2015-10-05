@@ -476,7 +476,7 @@ genQueryInp_t *prepare_user_search(genQueryInp_t *query_in,
 }
 
 specificQueryInp_t *prepare_specific_query(specificQueryInp_t *squery_in,
-                                           const char *sql, const json_t *args) {
+                                           const char *sql, json_t *args) {
 
     size_t index;
     json_t *value;
@@ -501,6 +501,19 @@ error:
     return squery_in;
 }
 
+void free_squery_input(specificQueryInp_t *squery_in) {
+    unsigned int i;
+    assert(squery_in);
+
+    for (i=0; i<10; i++) {
+        if(squery_in->args[i] != NULL) {
+            free(squery_in->args[i]);
+        }
+    }
+    // do not free squery_in->sql as it belongs to target json
+    free(squery_in);
+}
+
 query_format_in_t *prepare_specific_labels(const char *sql) {
     unsigned int i;
     query_format_in_t *format;
@@ -513,6 +526,10 @@ query_format_in_t *prepare_specific_labels(const char *sql) {
 
     for (i=0; i<(format->num_columns-1); i++) {
         format->labels[i] = strdup(fmt[i]);
+        if (!format->labels[i]) {
+            format->num_columns = i;
+            goto error;
+        }
     }
     return format;
 
@@ -521,15 +538,12 @@ error:
     return format;
 }
 
-void free_squery_input(specificQueryInp_t *squery_in) {
+void free_specific_labels(query_format_in_t *format) {
     unsigned int i;
-    assert(squery_in);
+    assert(format);
 
-    for (i=0; i<10; i++) {
-        if(squery_in->args[i] != NULL) {
-            free(squery_in->args[i]);
-        }
+    for (i=0; i<(format->num_columns-1); i++) {
+      free((void *)(format->labels[i]));
     }
-    free(squery_in->sql);
-    free(squery_in);
+    free(format);
 }

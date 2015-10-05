@@ -165,7 +165,7 @@ const char *get_avu_operator(json_t *avu, baton_error_t *error);
 
 const char *get_specific_sql(json_t *sql, baton_error_t *error);
 
-const json_t *get_specific_args(json_t *sql, baton_error_t *error);
+json_t *get_specific_args(json_t *sql, baton_error_t *error);
 
 const char *get_access_owner(json_t *access, baton_error_t *error);
 

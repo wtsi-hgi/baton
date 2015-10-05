@@ -213,12 +213,14 @@ json_t *do_specific(rcComm_t *conn, json_t *query,
     if (error->code != 0) goto error;
 
     free_squery_input(squery_in);
+    free_specific_labels(format);
     logmsg(TRACE, "Found %d matching items", json_array_size(items));
 
     return items;
 
 error:
     if (squery_in)  free_squery_input(squery_in);
+    if (format)     free_specific_labels(format);
     if (items)      json_decref(items);
 
     return NULL;
@@ -592,16 +594,22 @@ specificQueryInp_t *prepare_json_specific_query(specificQueryInp_t *squery_in,
     const char *sql = get_specific_sql(specific, error);
     if (error->code != 0) goto error;
 
-    const json_t *args = get_specific_args(specific, error);
+    json_t *args = get_specific_args(specific, error);
     if (error->code != 0) goto error;
 
     logmsg(DEBUG, "Preparing specific search s: '%s'", sql);
 
     prepare(squery_in, sql, args);
 
+    if (args) {
+        json_decref(args);
+        args  = NULL;
+    }
+
     return squery_in;
 
 error:
+    if (args) json_decref(args);
     return squery_in;
 }
 
