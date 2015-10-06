@@ -182,6 +182,7 @@ specificQueryInp_t *prepare_json_specific_query(specificQueryInp_t *squery_in,
 /**
  * Prepare the array of labels associated with a specific (SQL) query.
  *
+ * @param[in]   conn         An open iRODS connection.
  * @param[in]   specific     A JSON representation of a specific query.
  * @param[in]   prepare      Callback to add any AVU-searching clauses to the
  *                           query.
@@ -189,7 +190,8 @@ specificQueryInp_t *prepare_json_specific_query(specificQueryInp_t *squery_in,
  *
  * @return A pointer to a format with labels filled out.
  */
-query_format_in_t *prepare_json_specific_labels(json_t *specific,
+query_format_in_t *prepare_json_specific_labels(rcComm_t *conn,
+                                                json_t *specific,
                                                 prepare_specific_labels_cb prepare,
                                                 baton_error_t *error);
 

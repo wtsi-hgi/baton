@@ -93,7 +93,8 @@ typedef specificQueryInp_t *(*prepare_specific_query_cb) (specificQueryInp_t *sq
                                                           const char *sql,
                                                           json_t *args);
 
-typedef query_format_in_t *(*prepare_specific_labels_cb) (const char *sql);
+typedef query_format_in_t *(*prepare_specific_labels_cb) (rcComm_t *conn,
+                                                          const char *sql);
 
 /**
  * Log the current iRODS error stack through the underlying logging
@@ -236,7 +237,12 @@ genQueryInp_t *prepare_user_search(genQueryInp_t *query_in,
 specificQueryInp_t *prepare_specific_query(specificQueryInp_t *squery_in,
                                            const char *sql, json_t *args);
 
-query_format_in_t *prepare_specific_labels(const char *sql);
+query_format_in_t *make_query_format_from_sql(const char *sql);
+
+const char *irods_get_sql_for_specific_alias(rcComm_t *conn,
+                                             const char *alias);
+
+query_format_in_t *prepare_specific_labels(rcComm_t *conn, const char *sql);
 
 void free_squery_input(specificQueryInp_t *squery_in);
 

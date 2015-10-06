@@ -206,7 +206,7 @@ json_t *do_specific(rcComm_t *conn, json_t *query,
                                             prepare_squery, error);
     if (error->code != 0) goto error;
 
-    format = prepare_json_specific_labels(specific, prepare_labels, error);
+    format = prepare_json_specific_labels(conn, specific, prepare_labels, error);
     if (error->code != 0) goto error;
 
     items = do_squery(conn, squery_in, format, error);
@@ -613,7 +613,8 @@ error:
     return squery_in;
 }
 
-query_format_in_t *prepare_json_specific_labels(json_t *specific,
+query_format_in_t *prepare_json_specific_labels(rcComm_t *conn,
+                                                json_t *specific,
                                                 prepare_specific_labels_cb prepare,
                                                 baton_error_t *error) {
     query_format_in_t *format = NULL;
@@ -621,9 +622,9 @@ query_format_in_t *prepare_json_specific_labels(json_t *specific,
     const char *sql = get_specific_sql(specific, error);
     if (error->code != 0) goto error;
 
-    logmsg(DEBUG, "Preparing labels for specific search s: '%s'", sql);
+    logmsg(DEBUG, "Preparing labels for specific search: '%s'", sql);
 
-    format = prepare(sql);
+    format = prepare(conn, sql);
 
     return format;
 
