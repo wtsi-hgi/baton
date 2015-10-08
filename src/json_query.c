@@ -191,9 +191,9 @@ json_t *do_specific(rcComm_t *conn, json_t *query,
                     prepare_specific_query_cb prepare_squery,
                     prepare_specific_labels_cb prepare_labels,
                     baton_error_t *error) {
-    json_t *items           = NULL;
+    json_t *items             = NULL;
     json_t *specific;
-    query_format_in_t *format;
+    query_format_in_t *format = NULL;
 
     specificQueryInp_t *squery_in = calloc(1, sizeof (specificQueryInp_t));
     if (!squery_in) goto error;
