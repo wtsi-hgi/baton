@@ -646,7 +646,7 @@ error:
     format->num_columns = MAX_NUM_COLUMNS;
     for (i=0; i<(format->num_columns-1); i++) {
         if (format->labels[i] == NULL) {
-            asprintf((char**)&format->labels[i], "col%d", i);
+            reti = asprintf((char**)&format->labels[i], "col%d", i);
         }
     }
     return format;
