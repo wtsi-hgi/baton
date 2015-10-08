@@ -591,10 +591,13 @@ specificQueryInp_t *prepare_json_specific_query(specificQueryInp_t *squery_in,
                                                 json_t *specific,
                                                 prepare_specific_query_cb prepare,
                                                 baton_error_t *error) {
-    const char *sql = get_specific_sql(specific, error);
+    const char *sql = NULL;
+    json_t *args = NULL;
+
+    sql = get_specific_sql(specific, error);
     if (error->code != 0) goto error;
 
-    json_t *args = get_specific_args(specific, error);
+    args = get_specific_args(specific, error);
     if (error->code != 0) goto error;
 
     logmsg(DEBUG, "Preparing specific search s: '%s'", sql);
