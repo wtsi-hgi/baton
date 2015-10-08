@@ -520,7 +520,7 @@ void free_squery_input(specificQueryInp_t *squery_in) {
 }
 
 query_format_in_t *make_query_format_from_sql(const char *sql) {
-    query_format_in_t *format;
+    query_format_in_t *format = NULL;
     int reti;
     const char *select_list_capture_re_str = "^.*?select[[:space:]]+(distinct|all[[:space:]]+)?(.*?[^[:space:]])[[:space:]]+from[[:space:]].*$";
     const unsigned int select_list_capture_index = 2;
