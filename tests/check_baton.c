@@ -37,9 +37,13 @@ static int MAX_PATH_LEN    = 4096;
 static char *BASIC_COLL          = "baton-basic-test";
 static char *BASIC_DATA_PATH     = "data";
 static char *BASIC_METADATA_PATH = "metadata/meta1.imeta";
+static char *SQL_PATH            = "sql/specific_queries.sql";
 
-static char *SETUP_SCRIPT    = "scripts/setup_irods.sh";
-static char *TEARDOWN_SCRIPT = "scripts/teardown_irods.sh";
+static char *SETUP_SCRIPT        = "scripts/setup_irods.sh";
+static char *SQL_SETUP_SCRIPT    = "scripts/setup_sql.sh";
+
+static char *TEARDOWN_SCRIPT     = "scripts/teardown_irods.sh";
+static char *SQL_TEARDOWN_SCRIPT = "scripts/teardown_sql.sh";
 
 static void set_current_rods_root(char *in, char *out) {
     rodsEnv rodsEnv;
@@ -55,10 +59,34 @@ static void set_current_rods_root(char *in, char *out) {
 
 static void setup() {
     set_log_threshold(WARN);
+
+    char command[MAX_COMMAND_LEN];
+    char rods_root[MAX_PATH_LEN];
+    set_current_rods_root(BASIC_COLL, rods_root);
+
+    snprintf(command, MAX_COMMAND_LEN, "%s/%s %s/%s",
+             TEST_ROOT, SQL_SETUP_SCRIPT,
+             TEST_ROOT, SQL_PATH);
+
+    printf("Setup: %s\n", command);
+    int ret = system(command);
+
+    if (ret != 0) raise(SIGTERM);
 }
 
 static void teardown() {
+    char command[MAX_COMMAND_LEN];
+    char rods_root[MAX_PATH_LEN];
+    set_current_rods_root(BASIC_COLL, rods_root);
 
+    snprintf(command, MAX_COMMAND_LEN, "%s/%s %s/%s",
+             TEST_ROOT, SQL_TEARDOWN_SCRIPT,
+             TEST_ROOT, SQL_PATH);
+
+    printf("Teardown: %s\n", command);
+    int ret = system(command);
+
+    if (ret != 0) raise(SIGINT);
 }
 
 static void basic_setup() {
@@ -73,8 +101,7 @@ static void basic_setup() {
              TEST_RESOURCE,
              TEST_ROOT, BASIC_METADATA_PATH);
 
-    printf("Setup: %s\n", command);
-
+    printf("Data setup: %s\n", command);
     int ret = system(command);
 
     if (ret != 0) raise(SIGTERM);
@@ -89,10 +116,16 @@ static void basic_teardown() {
              TEST_ROOT, TEARDOWN_SCRIPT,
              rods_root);
 
-    printf("Teardown: %s\n", command);
+    printf("Data teardown: %s\n", command);
     int ret = system(command);
 
     if (ret != 0) raise(SIGINT);
+}
+
+static int have_rodsadmin() {
+    char *command = "iuserinfo |grep 'type: rodsadmin'";
+
+    return system(command);
 }
 
 START_TEST(test_str_starts_with) {
@@ -645,9 +678,6 @@ START_TEST(test_list_permissions_obj) {
                                  JSON_ZONE_KEY,  env.rodsZone,
                                  JSON_LEVEL_KEY, ACCESS_OWN);
 
-    print_json_stream(expected, stderr);
-    print_json_stream(results, stderr);
-
     ck_assert_int_eq(json_equal(results, expected), 1);
     ck_assert_int_eq(error.code, 0);
 
@@ -1050,7 +1080,6 @@ START_TEST(test_search_metadata_perm_obj) {
                                        flags, &resolve_error), EXIST_ST);
 
     baton_error_t mod_error;
-    init_baton_error(&mod_error);
     int rv = modify_permissions(conn, &rods_path, NO_RECURSE, "public",
                                 ACCESS_LEVEL_READ, &mod_error);
     ck_assert_int_eq(rv, 0);
@@ -1255,7 +1284,6 @@ START_TEST(test_add_metadata_obj) {
     ck_assert_int_ne(expected_error4.code, 0);
 
     baton_error_t error;
-    init_baton_error(&error);
     int rv = modify_metadata(conn, &rods_path, META_ADD, "test_attr",
                              "test_value", "test_units",
                              &error);
@@ -1318,7 +1346,6 @@ START_TEST(test_remove_metadata_obj) {
                                        flags, &resolve_error), EXIST_ST);
 
     baton_error_t error;
-    init_baton_error(&error);
     int rv = modify_metadata(conn, &rods_path, META_REM, "attr1", "value1",
                              "units1", &error);
     ck_assert_int_eq(rv, 0);
@@ -1461,7 +1488,6 @@ START_TEST(test_modify_permissions_obj) {
                                        flags, &resolve_error), EXIST_ST);
 
     baton_error_t mod_error;
-    init_baton_error(&mod_error);
     int rv = modify_permissions(conn, &rods_path, NO_RECURSE, "public",
                                 ACCESS_LEVEL_READ, &mod_error);
     ck_assert_int_eq(rv, 0);
@@ -1815,15 +1841,11 @@ START_TEST(test_slurp_file) {
                                 2048, 4096, 8192, 16384, 37268 };
     for (int i = 0; i < 10; i++) {
         baton_error_t open_error;
-        init_baton_error(&open_error);
-
-        data_obj_file_t *obj_file =
-            open_data_obj(conn, &rods_obj_path, &open_error);
+        data_obj_file_t *obj_file = open_data_obj(conn, &rods_obj_path,
+                                                  &open_error);
         ck_assert_int_eq(open_error.code, 0);
 
         baton_error_t slurp_error;
-        init_baton_error(&slurp_error);
-
         char *data = slurp_data_object(conn, obj_file, buffer_sizes[i],
                                        &slurp_error);
         ck_assert_int_eq(slurp_error.code, 0);
@@ -1838,6 +1860,12 @@ START_TEST(test_slurp_file) {
 }
 END_TEST
 
+// Having metadata on an item of (a = x, a = y), a search for "a = x"
+// gives correct results, as does a search for "a = y". However,
+// searching for "a = x and a = y" does not (nothing is returned).
+//
+// This is caused by overzealous cropping of search terms introduced
+// in commit d6d036
 START_TEST(test_regression_github_issue83) {
     option_flags flags = 0;
     rodsEnv env;
@@ -1907,6 +1935,48 @@ START_TEST(test_regression_github_issue83) {
 }
 END_TEST
 
+// Are all the search operators accepted? "n>=", "n<=" were not being
+// accepted by user input validation.
+START_TEST(test_regression_github_issue137) {
+    option_flags flags = SEARCH_OBJECTS;
+    rodsEnv env;
+    rcComm_t *conn = rods_login(&env);
+
+    // Not testing 'in' here
+    char *operators[] = { "=", "like", "not like", ">", "<",
+                          "n>", "n<", ">=", "<=", "n>=", "n<=" };
+
+    for (size_t i = 0; i < 11; i++) {
+        json_t *avu = json_pack("{s:s, s:s, s:s}",
+                                JSON_ATTRIBUTE_KEY, "numattr1",
+                                JSON_VALUE_KEY,     "10",
+                                JSON_OPERATOR_KEY,  operators[i]);
+        json_t *query = json_pack("{s:[o]}", JSON_AVUS_KEY, avu);
+
+        baton_error_t error;
+        json_t *results = search_metadata(conn, query, NULL, flags, &error);
+        ck_assert_msg(error.code == 0, operators[i]);
+
+        json_decref(query);
+        json_decref(results);
+    }
+
+    // Test 'in' here
+    json_t *avu = json_pack("{s:s, s:[s], s:s}",
+                            JSON_ATTRIBUTE_KEY, "numattr1",
+                            JSON_VALUE_KEY,     "10",
+                            JSON_OPERATOR_KEY,  "in");
+    json_t *query = json_pack("{s:[o]}", JSON_AVUS_KEY, avu);
+
+    baton_error_t error;
+    json_t *results = search_metadata(conn, query, NULL, flags, &error);
+    ck_assert_msg(error.code == 0, "in");
+    json_decref(query);
+    json_decref(results);
+
+    if (conn) rcDisconnect(conn);
+}
+END_TEST
 
 Suite *baton_suite(void) {
     Suite *suite = suite_create("baton");
@@ -1981,6 +2051,7 @@ Suite *baton_suite(void) {
     tcase_add_checked_fixture (regression_tests, basic_setup, basic_teardown);
 
     tcase_add_test(regression_tests, test_regression_github_issue83);
+    tcase_add_test(regression_tests, test_regression_github_issue137);
 
     suite_add_tcase(suite, utilities_tests);
     suite_add_tcase(suite, basic_tests);

@@ -1,4 +1,4 @@
-AC_INIT([baton], m4_esyscmd([git describe --dirty | tr -d '\012']), [kdj@sanger.ac.uk])
+AC_INIT([baton], m4_esyscmd_s([git describe --dirty --always --tags]), [kdj+baton@sanger.ac.uk])
 
 AC_PREREQ(2.68)
 AC_USE_SYSTEM_EXTENSIONS
@@ -232,7 +232,7 @@ CPPFLAGS=${IRODS4_RIP_CPPFLAGS}
 AC_RUN_IFELSE(
   [AC_LANG_PROGRAM([
 #include <string.h>
-#include <rodsVersion.hpp>
+#include <rodsVersion.h>
 ], [
 #if defined (RODS_REL_VERSION)
   return strncmp("rods4.", RODS_REL_VERSION, 5);
