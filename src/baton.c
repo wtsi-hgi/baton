@@ -223,9 +223,10 @@ error:
 
 int resolve_collection(json_t *object, rcComm_t *conn, rodsEnv *env,
                        option_flags flags, baton_error_t *error) {
+    char *collection = NULL;
+
     init_baton_error(error);
 
-    char *collection = NULL;
     if (!json_is_object(object)) {
         set_baton_error(error, -1, "Failed to resolve the iRODS collection: "
                         "target not a JSON object");
@@ -937,11 +938,15 @@ json_t *list_replicates(rcComm_t *conn, rodsPath_t *rods_path,
     json_t *results         = NULL;
 
     query_format_in_t obj_format =
-        { .num_columns = 3,
+        { .num_columns = 5,
           .columns     = { COL_D_REPL_STATUS, COL_DATA_REPL_NUM,
-                           COL_D_DATA_CHECKSUM },
+                           COL_D_DATA_CHECKSUM, COL_D_RESC_NAME,
+                           COL_R_LOC
+          },
           .labels      = { JSON_REPLICATE_STATUS_KEY, JSON_REPLICATE_NUMBER_KEY,
-                           JSON_CHECKSUM_KEY } };
+                           JSON_CHECKSUM_KEY, JSON_RESOURCE_KEY,
+                           JSON_LOCATION_KEY
+          } };
 
     init_baton_error(error);
 
@@ -982,13 +987,14 @@ json_t *list_replicates(rcComm_t *conn, rodsPath_t *rods_path,
     results = do_query(conn, query_in, obj_format.labels, error);
     if (error->code != 0) goto error;
 
-    results = revmap_replicate_results(results, error);
+    json_t *mapped = revmap_replicate_results(results, error);
     if (error->code != 0) goto error;
 
     logmsg(DEBUG, "Obtained replicates of '%s'", rods_path->outPath);
     free_query_input(query_in);
+    json_decref(results);
 
-    return results;
+    return mapped;
 
 error:
     logmsg(ERROR, "Failed to list replicates of '%s': error %d %s",
@@ -1007,6 +1013,8 @@ int modify_permissions(rcComm_t *conn, rodsPath_t *rods_path,
     char zone_name[NAME_LEN];
     modAccessControlInp_t mod_perms_in;
     int status;
+
+    init_baton_error(error);
 
     check_str_arg("owner specifier", owner_specifier, MAX_STR_LEN, error);
     if (error->code != 0) goto error;
@@ -1293,8 +1301,6 @@ static json_t *list_data_object(rcComm_t *conn, rodsPath_t *rods_path,
               .labels      = { JSON_COLLECTION_KEY, JSON_DATA_OBJECT_KEY } };
     }
 
-    init_baton_error(error);
-
     query_in = make_query_input(SEARCH_MAX_ROWS, obj_format->num_columns,
                                 obj_format->columns);
     query_in = prepare_obj_list(query_in, rods_path, NULL);
@@ -1332,11 +1338,11 @@ error:
 
 static json_t *list_collection(rcComm_t *conn, rodsPath_t *rods_path,
                                option_flags flags, baton_error_t *error) {
+    json_t *results = NULL;
+
     int query_flags = DATA_QUERY_FIRST_FG;
     collHandle_t coll_handle;
     collEnt_t coll_entry;
-
-    json_t *results = NULL;
 
     int status = rclOpenCollection(conn, rods_path->outPath, query_flags,
                                    &coll_handle);
